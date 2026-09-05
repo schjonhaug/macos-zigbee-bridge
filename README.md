@@ -54,10 +54,10 @@ python3 zbt2-bridge.py --port /dev/cu.usbmodemXXXX --baudrate 460800 --tcp-port 
 
 # SkyConnect/ZBT-1 explicitly (normally detected automatically)
 python3 zbt2-bridge.py --port /dev/cu.usbserial-XXXX --baudrate 115200 --rtscts
+```
 
 The bridge identifies ZBT-2 devices by their `cu.usbmodem*` name and ZBT-1/SkyConnect
 devices by `cu.usbserial*`. Use `--no-rtscts` or `--baudrate` to override firmware-specific settings.
-```
 
 ## Uninstall
 

@@ -9,7 +9,7 @@ PYTHON="$(command -v python3)"
 # Detect serial port (ZBT-2 uses usbmodem; ZBT-1/SkyConnect uses usbserial)
 SERIAL_PORT=$(find /dev -maxdepth 1 \( -name 'cu.usbmodem*' -o -name 'cu.usbserial*' \) -print | sort | head -1)
 if [ -z "$SERIAL_PORT" ]; then
-    echo "Error: No USB modem device found. Is the ZBT-2 plugged in?"
+    echo "Error: No ZBT-1/ZBT-2 serial device found. Is the coordinator plugged in?"
     exit 1
 fi
 echo "Found serial port: $SERIAL_PORT"
