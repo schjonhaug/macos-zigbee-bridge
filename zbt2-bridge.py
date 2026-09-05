@@ -8,14 +8,33 @@ Requires: pyserial (`pip3 install pyserial`)
 
 import argparse
 import asyncio
-import signal
-import sys
+from pathlib import Path
 
 import serial
 
 
-async def bridge(serial_port: str, baudrate: int, tcp_port: int) -> None:
-    ser = serial.Serial(serial_port, baudrate, timeout=0)
+def detect_serial_port() -> str:
+    """Return the first likely ZBT-1 or ZBT-2 device on macOS."""
+    for pattern in ("/dev/cu.usbmodem*", "/dev/cu.usbserial*"):
+        ports = sorted(Path("/dev").glob(pattern.removeprefix("/dev/")))
+        if ports:
+            return str(ports[0])
+    raise FileNotFoundError("No ZBT-1/ZBT-2 serial device found")
+
+
+def defaults_for_port(serial_port: str) -> tuple[int, bool]:
+    """Return (baudrate, rtscts) defaults for the two Connect generations."""
+    if "usbserial" in serial_port:
+        # ZBT-1/SkyConnect uses a CP2102N USB bridge.
+        return 115200, True
+    # ZBT-2 uses an ESP32-S3 USB controller.
+    return 460800, False
+
+
+async def bridge(
+    serial_port: str, baudrate: int, tcp_port: int, host: str, rtscts: bool
+) -> None:
+    ser = serial.Serial(serial_port, baudrate, timeout=0, rtscts=rtscts)
     clients: list[tuple[asyncio.StreamReader, asyncio.StreamWriter]] = []
 
     async def handle_client(
@@ -53,10 +72,10 @@ async def bridge(serial_port: str, baudrate: int, tcp_port: int) -> None:
             else:
                 await asyncio.sleep(0.001)
 
-    server = await asyncio.start_server(handle_client, "0.0.0.0", tcp_port)
+    server = await asyncio.start_server(handle_client, host, tcp_port)
     print(
-        f"ZBT-2 bridge: {serial_port} -> tcp://0.0.0.0:{tcp_port} "
-        f"(baud {baudrate})",
+        f"ZBT bridge: {serial_port} -> tcp://{host}:{tcp_port} "
+        f"(baud {baudrate}, rtscts {rtscts})",
         flush=True,
     )
     asyncio.create_task(serial_reader())
@@ -69,14 +88,14 @@ def main() -> None:
     )
     parser.add_argument(
         "--port",
-        default="/dev/cu.usbmodem441BF685F5301",
-        help="Serial port path (default: %(default)s)",
+        default=None,
+        help="Serial port path (default: auto-detect usbmodem/usbserial)",
     )
     parser.add_argument(
         "--baudrate",
         type=int,
-        default=460800,
-        help="Serial baud rate (default: %(default)s)",
+        default=None,
+        help="Serial baud rate (default: 460800 for ZBT-2, 115200 for ZBT-1)",
     )
     parser.add_argument(
         "--tcp-port",
@@ -84,8 +103,21 @@ def main() -> None:
         default=8888,
         help="TCP port to listen on (default: %(default)s)",
     )
+    parser.add_argument(
+        "--host", default="0.0.0.0", help="Address to bind (default: %(default)s)"
+    )
+    parser.add_argument(
+        "--rtscts",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Enable hardware RTS/CTS (default: on for ZBT-1, off for ZBT-2)",
+    )
     args = parser.parse_args()
-    asyncio.run(bridge(args.port, args.baudrate, args.tcp_port))
+    serial_port = args.port or detect_serial_port()
+    default_baudrate, default_rtscts = defaults_for_port(serial_port)
+    baudrate = args.baudrate or default_baudrate
+    rtscts = default_rtscts if args.rtscts is None else args.rtscts
+    asyncio.run(bridge(serial_port, baudrate, args.tcp_port, args.host, rtscts))
 
 
 if __name__ == "__main__":

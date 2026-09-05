@@ -20,7 +20,7 @@ Mac (serial) ──► zbt2-bridge.py (TCP :8888) ──► HA VM (socket://mac-
 
 - macOS with Python 3.10+
 - `pyserial` (`pip3 install pyserial`)
-- A Zigbee USB coordinator (tested with ZBT-2, should work with any EZSP/Silicon Labs device)
+- A Zigbee USB coordinator (Home Assistant Connect ZBT-1/SkyConnect or ZBT-2)
 - Home Assistant running in VirtualBox (or any VM)
 
 ## Quick start
@@ -38,19 +38,25 @@ Mac (serial) ──► zbt2-bridge.py (TCP :8888) ──► HA VM (socket://mac-
 3. In Home Assistant, go to **Settings > Devices & Services > Add Integration > ZHA**:
    - Adapter type: **EZSP**
    - Serial port: **socket://YOUR_MAC_IP:8888**
-   - Baudrate: **460800**
-   - Flow control: **none**
+   - Baudrate: **460800** for ZBT-2, **115200** for ZBT-1/SkyConnect
+   - Flow control: **none** for ZBT-2, **hardware RTS/CTS** for ZBT-1/SkyConnect
 
 The bridge auto-starts on login via a macOS LaunchAgent.
 
 ## Manual usage
 
 ```bash
-# Default: auto-detect serial port, 460800 baud, TCP port 8888
+# Default: auto-detect serial port and generation, TCP port 8888
 python3 zbt2-bridge.py
 
 # Custom settings
-python3 zbt2-bridge.py --port /dev/cu.usbmodemXXXX --baudrate 115200 --tcp-port 9999
+python3 zbt2-bridge.py --port /dev/cu.usbmodemXXXX --baudrate 460800 --tcp-port 9999
+
+# SkyConnect/ZBT-1 explicitly (normally detected automatically)
+python3 zbt2-bridge.py --port /dev/cu.usbserial-XXXX --baudrate 115200 --rtscts
+
+The bridge identifies ZBT-2 devices by their `cu.usbmodem*` name and ZBT-1/SkyConnect
+devices by `cu.usbserial*`. Use `--no-rtscts` or `--baudrate` to override firmware-specific settings.
 ```
 
 ## Uninstall

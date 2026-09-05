@@ -6,8 +6,8 @@ LAUNCH_AGENTS="$HOME/Library/LaunchAgents"
 PLIST_NAME="com.zbt2.serial-bridge.plist"
 PYTHON="$(command -v python3)"
 
-# Detect serial port
-SERIAL_PORT=$(ls /dev/cu.usbmodem* 2>/dev/null | head -1)
+# Detect serial port (ZBT-2 uses usbmodem; ZBT-1/SkyConnect uses usbserial)
+SERIAL_PORT=$(find /dev -maxdepth 1 \( -name 'cu.usbmodem*' -o -name 'cu.usbserial*' \) -print | sort | head -1)
 if [ -z "$SERIAL_PORT" ]; then
     echo "Error: No USB modem device found. Is the ZBT-2 plugged in?"
     exit 1
@@ -60,5 +60,10 @@ echo ""
 echo "In Home Assistant, set up ZHA with:"
 echo "  Adapter type:  EZSP"
 echo "  Serial port:   socket://$MAC_IP:8888"
-echo "  Baudrate:      460800"
-echo "  Flow control:  none"
+if [[ "$SERIAL_PORT" == *usbserial* ]]; then
+    echo "  Baudrate:      115200"
+    echo "  Flow control:  hardware (RTS/CTS)"
+else
+    echo "  Baudrate:      460800"
+    echo "  Flow control:  none"
+fi
