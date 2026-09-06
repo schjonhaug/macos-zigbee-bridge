@@ -1,10 +1,10 @@
 # macOS Zigbee Bridge
 
-Bridge a USB Zigbee coordinator (like the [Home Assistant Connect ZBT-2](https://www.home-assistant.io/connectzbt2/)) to a Home Assistant VM over TCP when macOS blocks VirtualBox USB passthrough.
+Bridge a USB Zigbee coordinator — [Home Assistant Connect ZBT-1](https://www.home-assistant.io/connectzbt1/) (SkyConnect) or [ZBT-2](https://www.home-assistant.io/connectzbt2/) — to a Home Assistant VM over TCP when macOS blocks VirtualBox USB passthrough.
 
 ## The problem
 
-On macOS Sonoma+, VirtualBox cannot capture USB serial devices like the ZBT-2. The macOS CDC ACM kernel driver (`com.apple.driver.usb.cdc.acm`) claims the device and refuses to release it. The kext cannot be unloaded, and granting USB privacy permissions doesn't help — VirtualBox gets `VERR_SHARING_VIOLATION` every time.
+On macOS Sonoma+, VirtualBox cannot capture USB serial devices like the ZBT-1 or ZBT-2. For the ZBT-2, the macOS CDC ACM kernel driver (`com.apple.driver.usb.cdc.acm`) claims the device and refuses to release it. The kext cannot be unloaded, and granting USB privacy permissions doesn't help — VirtualBox gets `VERR_SHARING_VIOLATION` every time.
 
 Tools like `socat` and `ser2net` also fail to properly bridge the EZSP serial protocol, breaking the connection handshake.
 
